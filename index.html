@@ -46,12 +46,12 @@
 <body>
 
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('settings')">設定</button>
-    <button class="tab-btn" onclick="switchTab('process')">執行</button>
+    <button class="tab-btn" onclick="switchTab('settings')">設定</button>
+    <button class="tab-btn active" onclick="switchTab('process')">執行</button>
   </div>
 
   <!-- 設定頁 -->
-  <div class="tab-content active" id="tab-settings">
+  <div class="tab-content" id="tab-settings">
 
     <section>
       <h2>匯入 / 匯出設定</h2>
@@ -73,17 +73,17 @@
 
     <section>
       <h2>類別設定</h2>
-      <div id="cat-list"></div>
       <div class="new-cat-row">
         <input type="text" id="new-cat" placeholder="新增類別名稱" onkeydown="if(event.key==='Enter')addCat()">
         <button class="btn-secondary btn-sm" onclick="addCat()">新增</button>
       </div>
+      <div id="cat-list" style="margin-top:12px;"></div>
     </section>
 
   </div>
 
   <!-- 執行頁 -->
-  <div class="tab-content" id="tab-process">
+  <div class="tab-content active" id="tab-process">
 
     <section>
       <h2>輸入資料</h2>
