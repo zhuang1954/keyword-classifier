@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分類工具</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f5f5f5; color: #333; max-width: 600px; margin: 0 auto; }
+    h2 { font-size: 16px; margin-bottom: 10px; }
+
+    /* Tabs */
+    .tab-bar { display: flex; background: #fff; border-bottom: 2px solid #e5e7eb; }
+    .tab-btn { flex: 1; padding: 14px; font-size: 15px; font-weight: bold; border: none; background: none; cursor: pointer; color: #9ca3af; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    section { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    textarea { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 10px; font-size: 14px; resize: vertical; min-height: 90px; font-family: monospace; }
+    button { padding: 12px 16px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; }
+    .btn-primary { background: #2563eb; color: #fff; width: 100%; margin-top: 10px; font-weight: bold; }
+    .btn-secondary { background: #e5e7eb; color: #333; }
+    .btn-danger { background: #fee2e2; color: #dc2626; }
+    .btn-sm { padding: 7px 11px; font-size: 13px; }
+    input[type="text"] { border: 1px solid #ddd; border-radius: 6px; padding: 9px 10px; font-size: 14px; width: 100%; }
+    label { font-size: 13px; color: #6b7280; margin-bottom: 5px; display: block; }
+    .category-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .category-name { font-weight: bold; font-size: 15px; }
+    .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 28px; }
+    .kw-tag { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 4px 8px; font-size: 13px; display: flex; align-items: center; gap: 4px; }
+    .kw-tag .rm { background: none; border: none; color: #93c5fd; font-size: 16px; cursor: pointer; padding: 0; line-height: 1; }
+    .kw-tag .rm:hover { color: #dc2626; }
+    .add-kw { display: flex; gap: 6px; }
+    .add-kw input { flex: 1; }
+    .io-row { display: flex; gap: 8px; }
+    .io-row button { flex: 1; }
+    .msg-ok { color: #16a34a; font-size: 13px; margin-top: 6px; }
+    .new-cat-row { display: flex; gap: 8px; margin-top: 4px; }
+    .new-cat-row input { flex: 1; }
+    .empty-hint { color: #9ca3af; font-size: 13px; text-align: center; padding: 12px 0; }
+  </style>
+</head>
+<body>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('settings')">設定</button>
+    <button class="tab-btn" onclick="switchTab('process')">執行</button>
+  </div>
+
+  <!-- 設定頁 -->
+  <div class="tab-content active" id="tab-settings">
+
+    <section>
+      <h2>匯入 / 匯出設定</h2>
+      <div class="io-row">
+        <button class="btn-secondary" onclick="toggleExport()">匯出設定</button>
+        <button class="btn-secondary" onclick="toggleImport()">匯入設定</button>
+      </div>
+      <div id="export-area" style="display:none;margin-top:12px;">
+        <label>複製以下內容，貼到 Excel</label>
+        <textarea id="export-text" readonly onclick="this.select()"></textarea>
+      </div>
+      <div id="import-area" style="display:none;margin-top:12px;">
+        <label>從 Excel 複製設定內容，貼到下方</label>
+        <textarea id="import-text" placeholder="食物&#9;交通&#10;雞腿&#9;捷運&#10;便當&#9;公車"></textarea>
+        <button class="btn-primary" onclick="doImport()">確認匯入</button>
+        <div id="import-msg" class="msg-ok" style="display:none;">匯入成功</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>類別設定</h2>
+      <div id="cat-list"></div>
+      <div class="new-cat-row">
+        <input type="text" id="new-cat" placeholder="新增類別名稱" onkeydown="if(event.key==='Enter')addCat()">
+        <button class="btn-secondary btn-sm" onclick="addCat()">新增</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- 執行頁 -->
+  <div class="tab-content" id="tab-process">
+
+    <section>
+      <h2>輸入資料</h2>
+      <label>從 Excel 複製貼上（名稱、價格）</label>
+      <textarea id="input-data" placeholder="名稱&#9;價格&#10;雞腿便當&#9;80&#10;捷運票&#9;30"></textarea>
+      <button class="btn-primary" onclick="process()">執行分類</button>
+    </section>
+
+    <section id="output-section" style="display:none;">
+      <h2>輸出結果</h2>
+      <label>點選後全選，複製貼回 Excel</label>
+      <textarea id="output-data" readonly onclick="this.select()"></textarea>
+      <button class="btn-primary" onclick="copyOutput()">複製結果</button>
+      <div id="copy-msg" class="msg-ok" style="display:none;">已複製</div>
+    </section>
+
+  </div>
+
+  <script>
+    const KEY = 'cls_settings';
+    let cats = [];
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['settings','process'][i] === tab));
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    function load() {
+      try { cats = JSON.parse(localStorage.getItem(KEY)) || []; } catch { cats = []; }
+      render();
+    }
+
+    function save() { localStorage.setItem(KEY, JSON.stringify(cats)); }
+
+    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function render() {
+      const el = document.getElementById('cat-list');
+      if (!cats.length) { el.innerHTML = '<div class="empty-hint">尚未設定任何類別</div>'; return; }
+      el.innerHTML = cats.map((c, ci) => `
+        <div class="category-card">
+          <div class="category-header">
+            <span class="category-name">${esc(c.name)}</span>
+            <button class="btn-danger btn-sm" onclick="removeCat(${ci})">刪除</button>
+          </div>
+          <div class="keywords">
+            ${c.keywords.map((kw, ki) => `
+              <span class="kw-tag">${esc(kw)}<button class="rm" onclick="removeKw(${ci},${ki})" title="刪除">&times;</button></span>
+            `).join('') || '<span style="font-size:13px;color:#9ca3af;">尚無關鍵字</span>'}
+          </div>
+          <div class="add-kw">
+            <input type="text" id="kw-${ci}" placeholder="新增關鍵字" onkeydown="if(event.key==='Enter')addKw(${ci})">
+            <button class="btn-secondary btn-sm" onclick="addKw(${ci})">新增</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addCat() {
+      const el = document.getElementById('new-cat');
+      const name = el.value.trim();
+      if (!name) return;
+      cats.push({ name, keywords: [] });
+      el.value = '';
+      save(); render();
+    }
+
+    function removeCat(ci) {
+      cats.splice(ci, 1);
+      save(); render();
+    }
+
+    function addKw(ci) {
+      const el = document.getElementById(`kw-${ci}`);
+      const kw = el.value.trim();
+      if (!kw) return;
+      cats[ci].keywords.push(kw);
+      el.value = '';
+      save(); render();
+    }
+
+    function removeKw(ci, ki) {
+      cats[ci].keywords.splice(ki, 1);
+      save(); render();
+    }
+
+    function classify(name) {
+      for (const c of cats)
+        for (const kw of c.keywords)
+          if (name.includes(kw)) return c.name;
+      return '';
+    }
+
+    function process() {
+      const raw = document.getElementById('input-data').value.trim();
+      if (!raw) return;
+      const out = raw.split('\n').map(line => {
+        const cols = line.split('\t');
+        return [...cols, classify(cols[0] || '')].join('\t');
+      }).join('\n');
+      document.getElementById('output-data').value = out;
+      document.getElementById('output-section').style.display = 'block';
+      document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copyOutput() {
+      const ta = document.getElementById('output-data');
+      ta.select();
+      const msg = document.getElementById('copy-msg');
+      const done = () => { msg.style.display='block'; setTimeout(()=>msg.style.display='none', 2000); };
+      if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(done).catch(()=>{ document.execCommand('copy'); done(); });
+      else { document.execCommand('copy'); done(); }
+    }
+
+    function toggleExport() {
+      const area = document.getElementById('export-area');
+      const shown = area.style.display !== 'none';
+      area.style.display = shown ? 'none' : 'block';
+      document.getElementById('import-area').style.display = 'none';
+      if (!shown) {
+        const maxKw = cats.length ? Math.max(...cats.map(c => c.keywords.length)) : 0;
+        const rows = [cats.map(c => c.name).join('\t')];
+        for (let i = 0; i < maxKw; i++)
+          rows.push(cats.map(c => c.keywords[i] || '').join('\t'));
+        document.getElementById('export-text').value = rows.join('\n');
+      }
+    }
+
+    function toggleImport() {
+      const area = document.getElementById('import-area');
+      const shown = area.style.display !== 'none';
+      area.style.display = shown ? 'none' : 'block';
+      document.getElementById('export-area').style.display = 'none';
+    }
+
+    function doImport() {
+      const raw = document.getElementById('import-text').value.trim();
+      if (!raw) return;
+      const lines = raw.split('\n');
+      const headers = lines[0].split('\t').map(h => h.trim()).filter(h => h);
+      const newCats = headers.map(name => ({ name, keywords: [] }));
+      for (let i = 1; i < lines.length; i++) {
+        lines[i].split('\t').forEach((kw, ci) => {
+          kw = kw.trim();
+          if (kw && newCats[ci]) newCats[ci].keywords.push(kw);
+        });
+      }
+      cats = newCats;
+      save(); render();
+      document.getElementById('import-text').value = '';
+      document.getElementById('import-area').style.display = 'none';
+      const msg = document.getElementById('import-msg');
+      msg.style.display = 'block';
+      setTimeout(() => msg.style.display = 'none', 2000);
+    }
+
+    load();
+  </script>
+</body>
+</html>
